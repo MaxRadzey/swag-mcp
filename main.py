@@ -1,6 +1,4 @@
-def main():
-    print("Hello from swag!")
-
+from swag.__main__ import main
 
 if __name__ == "__main__":
     main()
