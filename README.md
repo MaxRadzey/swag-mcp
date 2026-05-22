@@ -82,15 +82,11 @@ curl http://localhost:8000/health
 
 ## Tools
 
-| Tool        | Description                          |
-| ----------- | ------------------------------------ |
-| `stub_echo` | Stub: returns `[stub] {message}`     |
+| Tool | Description |
+| ---- | ----------- |
+| `list_services` | Returns `id`, `name`, `description` for each registered API (no OpenAPI bodies or spec URLs) |
 
-## Prompts
-
-| Prompt       | Description                                      |
-| ------------ | ------------------------------------------------ |
-| `stub_prompt` | Stub template with optional `topic` argument    |
+On MCP `initialize`, the server sends **instructions** telling the agent to call `list_services` first, pick a `service_id` from `name`/`description`, then use `get_service_spec` when that tool is available.
 
 ## Configuration
 
@@ -100,6 +96,7 @@ curl http://localhost:8000/health
 | `SWAG_HOST` | `0.0.0.0` | HTTP bind host |
 | `SWAG_PORT` | `8000` | HTTP port |
 | `SWAG_MCP_MOUNT_PATH` | `/mcp` | MCP Streamable HTTP mount path |
+| `SWAG_CATALOG_PATH` | `data/catalog.json` | Path to the services catalog JSON |
 
 ## Layout
 
@@ -107,12 +104,12 @@ curl http://localhost:8000/health
 swag/
   config.py      # settings
   server.py      # FastMCP factory + stdio run
-  models/        # Catalog, ServiceEntry
+  models/        # Catalog, ServiceEntry, ServiceSummary
   adapters/      # read catalog JSON from file (HTTP later)
   services/      # business logic (CatalogService, …)
-  http/          # FastAPI app, health, MCP mount
-  tools/         # MCP tool handlers (transport)
-  prompts/       # MCP prompt handlers (transport)
+  mcp_tools/     # MCP tool handlers (transport)
+  mcp_instructions.py  # server instructions for agents
+  asgi.py        # FastAPI app, health, MCP mount
 data/
   catalog.json   # production catalog (URLs only)
 ```

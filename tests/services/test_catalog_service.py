@@ -20,6 +20,16 @@ def test_load_list_preserves_file_order(fixture_catalog_path: Path) -> None:
     assert [entry.id for entry in entries] == ["alpha-api", "beta-api", "gamma-api"]
 
 
+def test_list_public_returns_metadata_without_spec_url(fixture_catalog_path: Path) -> None:
+    service = CatalogService(fixture_catalog_path)
+    summaries = service.list_public()
+    assert len(summaries) == 3
+    assert [s.id for s in summaries] == ["alpha-api", "beta-api", "gamma-api"]
+    dumped = [s.model_dump() for s in summaries]
+    assert all(set(item.keys()) == {"id", "name", "description"} for item in dumped)
+    assert summaries[0].name == "Alpha API"
+
+
 def test_load_uses_cache(fixture_catalog_path: Path) -> None:
     service = CatalogService(fixture_catalog_path)
     first = service.load()

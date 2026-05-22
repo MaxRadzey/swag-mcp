@@ -1,7 +1,8 @@
 from mcp.server.fastmcp import FastMCP
 
-from swag.mcp_tools.stub import register_stub_tool
+from swag.mcp_tools.list_services import register_list_services_tool
+from swag.services.catalog import CatalogService
 
 
-def register_tools(mcp: FastMCP) -> None:
-    register_stub_tool(mcp)
+def register_tools(mcp: FastMCP, *, catalog: CatalogService) -> None:
+    register_list_services_tool(mcp, catalog)

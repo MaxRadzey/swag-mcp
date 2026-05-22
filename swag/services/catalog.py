@@ -5,6 +5,7 @@ from typing import Any
 from swag.adapters.catalog_file import read_catalog_file
 from swag.models.catalog import Catalog
 from swag.models.service_entry import ServiceEntry
+from swag.models.service_summary import ServiceSummary
 
 DEFAULT_CATALOG_TTL_SECONDS = 600
 
@@ -28,6 +29,13 @@ class CatalogService:
         """Return services in catalog file order (same cache as ``load``)."""
         self._ensure_fresh()
         return self._require_cached_list()
+
+    def list_public(self) -> list[ServiceSummary]:
+        """Return agent-visible metadata only (no spec URLs or OpenAPI bodies)."""
+        return [
+            ServiceSummary(id=entry.id, name=entry.name, description=entry.description)
+            for entry in self.load_list()
+        ]
 
     def reload(self) -> None:
         """Drop cache and load catalog again."""
