@@ -107,10 +107,14 @@ curl http://localhost:8000/health
 swag/
   config.py      # settings
   server.py      # FastMCP factory + stdio run
+  models/        # Catalog, ServiceEntry
+  adapters/      # read catalog JSON from file (HTTP later)
+  services/      # business logic (CatalogService, …)
   http/          # FastAPI app, health, MCP mount
   tools/         # MCP tool handlers (transport)
   prompts/       # MCP prompt handlers (transport)
-  services/      # business logic
+data/
+  catalog.json   # production catalog (URLs only)
 ```
 
 ## Development

@@ -1,0 +1,22 @@
+{
+  "services": [
+    {
+      "id": "alpha-api",
+      "name": "Alpha API",
+      "description": "First test service",
+      "spec_url": "https://example.com/openapi/alpha-api.json"
+    },
+    {
+      "id": "beta-api",
+      "name": "Beta API",
+      "description": "Second test service",
+      "spec_url": "https://example.com/openapi/beta-api.json"
+    },
+    {
+      "id": "gamma-api",
+      "name": "Gamma API",
+      "description": "Third test service",
+      "spec_url": "https://example.com/openapi/gamma-api.json"
+    }
+  ]
+}

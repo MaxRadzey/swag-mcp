@@ -1,0 +1,10 @@
+{
+  "services": [
+    {
+      "id": "petstore",
+      "name": "Petstore Demo API",
+      "description": "Public demo API for testing (requires network)",
+      "spec_url": "https://petstore3.swagger.io/api/v3/openapi.json"
+    }
+  ]
+}
