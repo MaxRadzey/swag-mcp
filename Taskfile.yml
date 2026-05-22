@@ -1,0 +1,44 @@
+version: "3"
+
+vars:
+  UV: uv
+
+tasks:
+  test:
+    desc: Run pytest
+    cmds:
+      - "{{.UV}} run pytest"
+
+  up:
+    desc: Start containers (docker compose up --build)
+    cmds:
+      - docker compose up --build
+
+  down:
+    desc: Stop containers
+    cmds:
+      - docker compose down
+
+  ruff:
+    desc: Ruff lint check (no auto-fix)
+    cmds:
+      - "{{.UV}} run ruff check swag tests"
+
+  ruff-fix:
+    desc: Ruff lint with auto-fix
+    cmds:
+      - "{{.UV}} run ruff check --fix swag tests"
+
+  mypy:
+    desc: Mypy type check
+    cmds:
+      - "{{.UV}} run mypy"
+
+  check:
+    desc: Run ruff and mypy
+    deps: [ruff, mypy]
+
+  pre-commit-install:
+    desc: Install git pre-commit hooks
+    cmds:
+      - "{{.UV}} run pre-commit install"
