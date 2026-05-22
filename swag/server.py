@@ -1,8 +1,7 @@
 from mcp.server.fastmcp import FastMCP
 
 from swag.config import Settings
-from swag.prompts import register_prompts
-from swag.tools import register_tools
+from swag.mcp_tools import register_tools
 
 
 def create_server(settings: Settings | None = None) -> FastMCP:
@@ -16,7 +15,6 @@ def create_server(settings: Settings | None = None) -> FastMCP:
         stateless_http=True,
     )
     register_tools(mcp)
-    register_prompts(mcp)
     return mcp
 
 
