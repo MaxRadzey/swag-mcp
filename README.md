@@ -4,7 +4,7 @@ MCP server (Python, [FastMCP](https://github.com/modelcontextprotocol/python-sdk
 
 ## Run
 
-Единственный режим запуска — HTTP-сервер: FastAPI + MCP на `/mcp` и `GET /health`. Локально поднимается через Docker, на проде запускается тот же образ (`uv run uvicorn swag.app.asgi:app`).
+The only runtime mode is an HTTP server: FastAPI + MCP on `/mcp` and `GET /health`. Locally it runs via Docker; in production the same image runs (`uv run uvicorn swag.app.asgi:app`).
 
 ### Local (Docker)
 
@@ -12,19 +12,19 @@ MCP server (Python, [FastMCP](https://github.com/modelcontextprotocol/python-sdk
 docker compose up --build
 ```
 
-Compose монтирует `./swag` в контейнер и запускает uvicorn с `--reload`, поэтому изменения кода подхватываются без пересборки образа.
+Compose mounts `./swag` into the container and runs uvicorn with `--reload`, so code changes are picked up without rebuilding the image.
 
-Проверка:
+Check:
 
 ```bash
 curl http://localhost:8000/health
 # {"status":"ok","service":"swag"}
-# MCP для Cursor: http://localhost:8000/mcp
+# MCP for Cursor: http://localhost:8000/mcp
 ```
 
 ## Cursor
 
-Подключение к запущенному серверу по HTTP:
+Connect to the running server over HTTP:
 
 ```json
 {
@@ -60,20 +60,20 @@ On MCP `initialize`, the server sends **instructions** telling the agent to call
 
 ## Layout
 
-Код разложен по вертикальным пакетам-фичам: каждый пакет самодостаточен (свои
-`models` / `service` / `tool`).
+The code is organized into vertical feature packages: each package is
+self-contained (its own `models` / `service` / `tool`).
 
 ```
 swag/
   config.py             # settings
   exceptions.py         # SwagError hierarchy
   mcp_instructions.py   # server instructions for agents
-  catalog/              # реестр сервисов (list_services): models, source, service, tool
-  spec/                 # сырой OpenAPI/Swagger документ: models, fetch, decode, validate, parsing, service
-  search/               # поисковый индекс + ранжирование (search_spec): models, text, extractors,
+  catalog/              # services registry (list_services): models, source, service, tool
+  spec/                 # raw OpenAPI/Swagger document: models, fetch, decode, validate, parsing, service
+  search/               # search index + ranking (search_spec): models, text, extractors,
                         #   index, keyword, fuzzy, boosters, engine, tool
-  operation/            # полный контракт одной операции (get_operation): models, detail, ref_resolver, tool
-  app/                  # сборка: gateway (оркестратор), tools, server (FastMCP), asgi (FastAPI)
+  operation/            # full contract of a single operation (get_operation): models, detail, ref_resolver, tool
+  app/                  # composition root: gateway (orchestrator), tools, server (FastMCP), asgi (FastAPI)
 data/
   catalog.json          # production catalog (URLs only)
 ```
