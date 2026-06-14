@@ -1,0 +1,69 @@
+import json
+from pathlib import Path
+
+import httpx
+import pytest
+from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.exceptions import ToolError
+
+from swag.app.gateway import SpecGateway
+from swag.app.tools import register_tools
+from swag.catalog.service import CatalogService
+from swag.spec.service import SpecService
+
+
+def _spec_body() -> bytes:
+    return json.dumps(
+        {
+            "openapi": "3.0.0",
+            "info": {"title": "Pets", "version": "1.0.0"},
+            "paths": {
+                "/pet": {
+                    "post": {
+                        "operationId": "addPet",
+                        "summary": "Add a new pet",
+                        "tags": ["pet"],
+                        "requestBody": {
+                            "required": True,
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Pet"}}},
+                        },
+                        "responses": {"200": {"description": "ok"}},
+                    },
+                },
+            },
+            "components": {"schemas": {"Pet": {"type": "object", "properties": {"name": {"type": "string"}}}}},
+        }
+    ).encode()
+
+
+def _build_tool(fixture_catalog_path: Path) -> tuple[FastMCP, httpx.Client]:
+    catalog = CatalogService(fixture_catalog_path)
+    client = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200, content=_spec_body())))
+    spec_search = SpecGateway(SpecService(catalog, client))
+    mcp = FastMCP("test")
+    register_tools(mcp, catalog=catalog, spec_search=spec_search)
+    return mcp, client
+
+
+def test_get_operation_returns_resolved_contract(fixture_catalog_path: Path) -> None:
+    mcp, client = _build_tool(fixture_catalog_path)
+
+    tool = mcp._tool_manager._tools["get_operation"]
+    result = tool.fn(service_id="alpha-api", method="POST", path="/pet")
+
+    assert result.operation_id == "addPet"
+    assert result.request_body is not None
+    assert result.request_body.content[0].json_schema == {
+        "type": "object",
+        "properties": {"name": {"type": "string"}},
+    }
+    client.close()
+
+
+def test_get_operation_unknown_operation_raises_tool_error(fixture_catalog_path: Path) -> None:
+    mcp, client = _build_tool(fixture_catalog_path)
+
+    tool = mcp._tool_manager._tools["get_operation"]
+    with pytest.raises(ToolError):
+        tool.fn(service_id="alpha-api", method="DELETE", path="/pet")
+    client.close()

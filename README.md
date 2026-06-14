@@ -2,73 +2,29 @@
 
 MCP server (Python, [FastMCP](https://github.com/modelcontextprotocol/python-sdk)).
 
-## Local run
+## Run
 
-| Mode | When | Who starts the process |
-|------|------|------------------------|
-| **stdio** (default) | MCP в Cursor через `command` / `args` | **Cursor** сам запускает `python -m swag` |
-| **stdio** (manual) | Отладка транспорта без IDE | Вы в терминале |
-| **http** | Remote MCP, как на проде, но локально | Вы в терминале или Docker |
-| **Docker** | HTTP + healthcheck, ближе к деплою | `docker compose` |
+Единственный режим запуска — HTTP-сервер: FastAPI + MCP на `/mcp` и `GET /health`. Локально поднимается через Docker, на проде запускается тот же образ (`uv run uvicorn swag.app.asgi:app`).
 
-`run_stdio()` в [`swag/server.py`](swag/server.py) — только stdio-режим. На проде не используется.
-
-### stdio + Cursor (основной локальный путь)
-
-`SWAG_TRANSPORT` по умолчанию `stdio`. Сервер **вручную поднимать не нужно** — достаточно прописать MCP в Cursor (см. ниже). IDE запустит процесс при подключении к серверу.
-
-Для отладки в терминале:
-
-```bash
-uv run python -m swag
-# то же: uv run swag
-```
-
-Процесс ждёт JSON-RPC на stdin; в обычном shell он «висит» без вывода — это нормально.
-
-### HTTP (локально, без Docker)
-
-Как задеплоенный инстанс: FastAPI + MCP на `/mcp`. Сервер нужно **запустить самому**:
-
-```bash
-SWAG_TRANSPORT=http uv run python -m swag
-```
-
-Проверка:
-
-```bash
-curl http://localhost:8000/health
-# MCP для Cursor: http://localhost:8000/mcp
-```
-
-## Docker (local)
-
-Образ только собирает зависимости; запуск — через `docker-compose.yml` (для прода будет отдельная конфигурация).
+### Local (Docker)
 
 ```bash
 docker compose up --build
 ```
 
+Compose монтирует `./swag` в контейнер и запускает uvicorn с `--reload`, поэтому изменения кода подхватываются без пересборки образа.
+
+Проверка:
+
 ```bash
 curl http://localhost:8000/health
+# {"status":"ok","service":"swag"}
+# MCP для Cursor: http://localhost:8000/mcp
 ```
 
 ## Cursor
 
-### Local stdio
-
-```json
-{
-  "mcpServers": {
-    "swag": {
-      "command": "uv",
-      "args": ["--directory", "/absolute/path/to/swag", "run", "python", "-m", "swag"]
-    }
-  }
-}
-```
-
-### Remote HTTP (Docker or `SWAG_TRANSPORT=http`)
+Подключение к запущенному серверу по HTTP:
 
 ```json
 {
@@ -85,33 +41,41 @@ curl http://localhost:8000/health
 | Tool | Description |
 | ---- | ----------- |
 | `list_services` | Returns `id`, `name`, `description` for each registered API (no OpenAPI bodies or spec URLs) |
+| `search_spec` | Searches a selected service spec and returns compact ranked operation hits (`method`, `path`, `summary`, `score`) |
+| `get_operation` | Returns one operation's full contract for a chosen `method`+`path`: parameters, request body, and responses, with local `$ref` schemas resolved inline |
 
-On MCP `initialize`, the server sends **instructions** telling the agent to call `list_services` first, pick a `service_id` from `name`/`description`, then use `get_service_spec` when that tool is available.
+On MCP `initialize`, the server sends **instructions** telling the agent to call `list_services` first, pick a `service_id` from `name`/`description`, then `search_spec` with the user's action/entity query and any clear method/path/tag hints, and finally `get_operation` on the chosen hit to fetch the details needed to build a request.
+
+`search_spec` does not return the full OpenAPI document. It builds an in-memory search index from the selected spec (JSON or YAML) and returns top operation candidates; `get_operation` then returns the self-contained contract of a single operation. The server never calls the target API itself.
 
 ## Configuration
 
 | Variable | Default | Description |
 | -------- | ------- | ----------- |
-| `SWAG_TRANSPORT` | `stdio` | `stdio` or `http` |
 | `SWAG_HOST` | `0.0.0.0` | HTTP bind host |
 | `SWAG_PORT` | `8000` | HTTP port |
 | `SWAG_MCP_MOUNT_PATH` | `/mcp` | MCP Streamable HTTP mount path |
 | `SWAG_CATALOG_PATH` | `data/catalog.json` | Path to the services catalog JSON |
+| `SWAG_SPEC_FETCH_TIMEOUT` | `15.0` | HTTP timeout (seconds) for fetching a spec document |
 
 ## Layout
 
+Код разложен по вертикальным пакетам-фичам: каждый пакет самодостаточен (свои
+`models` / `service` / `tool`).
+
 ```
 swag/
-  config.py      # settings
-  server.py      # FastMCP factory + stdio run
-  models/        # Catalog, ServiceEntry, ServiceSummary
-  adapters/      # read catalog JSON from file (HTTP later)
-  services/      # business logic (CatalogService, …)
-  mcp_tools/     # MCP tool handlers (transport)
-  mcp_instructions.py  # server instructions for agents
-  asgi.py        # FastAPI app, health, MCP mount
+  config.py             # settings
+  exceptions.py         # SwagError hierarchy
+  mcp_instructions.py   # server instructions for agents
+  catalog/              # реестр сервисов (list_services): models, source, service, tool
+  spec/                 # сырой OpenAPI/Swagger документ: models, fetch, decode, validate, parsing, service
+  search/               # поисковый индекс + ранжирование (search_spec): models, text, extractors,
+                        #   index, keyword, fuzzy, boosters, engine, tool
+  operation/            # полный контракт одной операции (get_operation): models, detail, ref_resolver, tool
+  app/                  # сборка: gateway (оркестратор), tools, server (FastMCP), asgi (FastAPI)
 data/
-  catalog.json   # production catalog (URLs only)
+  catalog.json          # production catalog (URLs only)
 ```
 
 ## Development

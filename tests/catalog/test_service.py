@@ -1,0 +1,63 @@
+import json
+import shutil
+from pathlib import Path
+
+import pytest
+
+from swag.catalog.service import CatalogService
+
+
+def test_load_returns_three_services(fixture_catalog_path: Path) -> None:
+    service = CatalogService(fixture_catalog_path)
+    by_id = service.load()
+    assert set(by_id.keys()) == {"alpha-api", "beta-api", "gamma-api"}
+    assert by_id["alpha-api"].name == "Alpha API"
+
+
+def test_load_list_preserves_file_order(fixture_catalog_path: Path) -> None:
+    service = CatalogService(fixture_catalog_path)
+    entries = service.load_list()
+    assert [entry.id for entry in entries] == ["alpha-api", "beta-api", "gamma-api"]
+
+
+def test_list_public_returns_metadata_without_spec_url(fixture_catalog_path: Path) -> None:
+    service = CatalogService(fixture_catalog_path)
+    summaries = service.list_public()
+    assert len(summaries) == 3
+    assert [s.id for s in summaries] == ["alpha-api", "beta-api", "gamma-api"]
+    dumped = [s.model_dump() for s in summaries]
+    assert all(set(item.keys()) == {"id", "name", "description"} for item in dumped)
+    assert summaries[0].name == "Alpha API"
+
+
+def test_load_uses_cache(fixture_catalog_path: Path) -> None:
+    service = CatalogService(fixture_catalog_path)
+    first = service.load()
+    second = service.load()
+    assert first is second
+
+
+def test_cache_expires_after_ttl(
+    fixture_catalog_path: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    catalog_path = tmp_path / "catalog.json"
+    shutil.copy(fixture_catalog_path, catalog_path)
+    service = CatalogService(catalog_path, ttl_seconds=10)
+
+    monotonic_values = iter([100.0, 120.0, 120.0])
+
+    def fake_monotonic() -> float:
+        return next(monotonic_values, 120.0)
+
+    monkeypatch.setattr("swag.catalog.service.time.monotonic", fake_monotonic)
+    first = service.load()
+
+    raw = json.loads(catalog_path.read_text(encoding="utf-8"))
+    raw["services"][0]["name"] = "Alpha API Updated"
+    catalog_path.write_text(json.dumps(raw), encoding="utf-8")
+
+    second = service.load()
+    assert second is not first
+    assert second["alpha-api"].name == "Alpha API Updated"

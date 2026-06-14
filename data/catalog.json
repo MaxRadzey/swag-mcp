@@ -2,9 +2,51 @@
   "services": [
     {
       "id": "petstore",
-      "name": "Petstore Demo API",
-      "description": "Public demo API for testing (requires network)",
+      "name": "Petstore Demo API (OpenAPI 3)",
+      "description": "Public demo API for testing — pets, store orders, users (OpenAPI 3.0)",
       "spec_url": "https://petstore3.swagger.io/api/v3/openapi.json"
+    },
+    {
+      "id": "petstore-v2",
+      "name": "Petstore Demo API (Swagger 2.0)",
+      "description": "Classic Swagger 2.0 version of the Petstore demo — good for testing legacy spec parsing",
+      "spec_url": "https://petstore.swagger.io/v2/swagger.json"
+    },
+    {
+      "id": "nasa-apod",
+      "name": "NASA APOD API",
+      "description": "NASA Astronomy Picture of the Day — tiny single-endpoint spec",
+      "spec_url": "https://api.apis.guru/v2/specs/nasa.gov/apod/1.0.0/openapi.json"
+    },
+    {
+      "id": "instagram",
+      "name": "Instagram API",
+      "description": "Instagram media, users, comments and likes (Swagger 2.0)",
+      "spec_url": "https://api.apis.guru/v2/specs/instagram.com/1.0.0/swagger.json"
+    },
+    {
+      "id": "google-calendar",
+      "name": "Google Calendar API",
+      "description": "Google Calendar — events, calendars, ACLs and free/busy queries",
+      "spec_url": "https://api.apis.guru/v2/specs/googleapis.com/calendar/v3/openapi.json"
+    },
+    {
+      "id": "spotify",
+      "name": "Spotify Web API",
+      "description": "Spotify — albums, artists, tracks, playlists, search and player control",
+      "spec_url": "https://api.apis.guru/v2/specs/spotify.com/1.0.0/openapi.json"
+    },
+    {
+      "id": "slack",
+      "name": "Slack Web API",
+      "description": "Slack — messages, channels, users, files and reactions",
+      "spec_url": "https://api.apis.guru/v2/specs/slack.com/1.7.0/openapi.json"
+    },
+    {
+      "id": "digitalocean",
+      "name": "DigitalOcean API (YAML)",
+      "description": "DigitalOcean cloud — droplets, volumes, networking; served as YAML to exercise the YAML decode path",
+      "spec_url": "https://api.apis.guru/v2/specs/digitalocean.com/2.0/openapi.yaml"
     }
   ]
 }

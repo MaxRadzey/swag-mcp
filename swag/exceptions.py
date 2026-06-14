@@ -6,6 +6,10 @@ class ServiceNotFoundError(SwagError):
     """Raised when a service id is missing from the catalog."""
 
 
+class OperationNotFoundError(SwagError):
+    """Raised when a method+path operation is absent from a spec document."""
+
+
 class SpecFetchError(SwagError):
     """Raised when an HTTP request for a spec document fails."""
 

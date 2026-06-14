@@ -9,6 +9,8 @@ dependencies = [
     "httpx>=0.27",
     "mcp>=1.27.1",
     "pydantic>=2",
+    "pydantic-settings>=2.14.1",
+    "pyyaml>=6.0.3",
     "uvicorn[standard]>=0.30",
 ]
 
@@ -18,10 +20,8 @@ dev = [
     "pre-commit>=4",
     "pytest>=8",
     "ruff>=0.9",
+    "types-pyyaml>=6.0.12.20260518",
 ]
-
-[project.scripts]
-swag = "swag.__main__:main"
 
 [build-system]
 requires = ["hatchling"]

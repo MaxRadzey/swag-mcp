@@ -2,16 +2,16 @@ services:
   swag:
     build: .
     ports:
-      - "8000:8000"
-    environment:
-      SWAG_TRANSPORT: http
-      SWAG_HOST: 0.0.0.0
-      SWAG_PORT: 8000
+      - "8765:8000"
+    volumes:
+      - ./swag:/app/swag
+      - ./data:/app/data:ro
     command:
       - uv
       - run
       - uvicorn
-      - swag.asgi:app
+      - swag.app.asgi:app
+      - --reload
       - --host
       - 0.0.0.0
       - --port
