@@ -9,7 +9,7 @@ from swag.mcp_instructions import SERVER_INSTRUCTIONS
 from swag.spec.service import SpecService
 
 
-def create_server(settings: Settings, *, client: httpx.Client) -> FastMCP:
+def create_server(settings: Settings, *, client: httpx.AsyncClient) -> FastMCP:
     catalog = CatalogService(settings.catalog_path)
     spec_service = SpecService(catalog, client)
 

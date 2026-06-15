@@ -3,10 +3,10 @@ import httpx
 from swag.exceptions import SpecFetchError
 
 
-def fetch_spec_body(client: httpx.Client, url: str) -> bytes:
+async def fetch_spec_body(client: httpx.AsyncClient, url: str) -> bytes:
     """GET spec document bytes from URL."""
     try:
-        response = client.get(url)
+        response = await client.get(url)
     except httpx.HTTPError as exc:
         msg = f"failed to fetch spec from {url}"
         raise SpecFetchError(msg) from exc

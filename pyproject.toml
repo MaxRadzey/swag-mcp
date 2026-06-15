@@ -19,6 +19,7 @@ dev = [
     "mypy>=1.13",
     "pre-commit>=4",
     "pytest>=8",
+    "pytest-asyncio>=0.24",
     "ruff>=0.9",
     "types-pyyaml>=6.0.12.20260518",
 ]
@@ -32,6 +33,7 @@ packages = ["swag"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"
 
 [tool.ruff]
 target-version = "py312"

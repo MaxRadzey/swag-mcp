@@ -8,7 +8,7 @@ from swag.search.models import SearchQuery, SearchResponse
 
 def register_search_spec_tool(mcp: FastMCP, spec_search: SpecGateway) -> None:
     @mcp.tool()
-    def search_spec(
+    async def search_spec(
         service_id: str,
         query: str,
         method: str | None = None,
@@ -31,6 +31,6 @@ def register_search_spec_tool(mcp: FastMCP, spec_search: SpecGateway) -> None:
             limit=limit,
         )
         try:
-            return spec_search.search(service_id, search_query)
+            return await spec_search.search(service_id, search_query)
         except SwagError as exc:
             raise ToolError(str(exc)) from exc

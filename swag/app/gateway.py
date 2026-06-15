@@ -25,8 +25,8 @@ class SpecGateway:
         self._search_engine = search_engine or SearchEngine()
         self._index_cache: dict[str, _IndexCacheEntry] = {}
 
-    def search(self, service_id: str, query: SearchQuery) -> SearchResponse:
-        document = self._spec_service.get(service_id)
+    async def search(self, service_id: str, query: SearchQuery) -> SearchResponse:
+        document = await self._spec_service.get(service_id)
         index = self._index_for(service_id, document)
         hits = self._search_engine.search(index, query)
         return SearchResponse(
@@ -36,9 +36,9 @@ class SpecGateway:
             total_candidates=index.document_count,
         )
 
-    def get_operation(self, service_id: str, method: str, path: str) -> OperationDetail:
+    async def get_operation(self, service_id: str, method: str, path: str) -> OperationDetail:
         """Return the full contract of one operation (resolved ``$ref``)."""
-        document = self._spec_service.get(service_id)
+        document = await self._spec_service.get(service_id)
         detail = extract_operation_detail(document, service_id, method, path)
         if detail is None:
             msg = f"operation not found: {method.upper()} {path} in service {service_id!r}"

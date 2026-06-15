@@ -36,16 +36,16 @@ def _spec_body() -> bytes:
     ).encode()
 
 
-def _build_mcp(fixture_catalog_path: Path) -> tuple[FastMCP, httpx.Client]:
+def _build_mcp(fixture_catalog_path: Path) -> tuple[FastMCP, httpx.AsyncClient]:
     catalog = CatalogService(fixture_catalog_path)
-    client = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200, content=_spec_body())))
+    client = httpx.AsyncClient(transport=httpx.MockTransport(lambda request: httpx.Response(200, content=_spec_body())))
     spec_search = SpecGateway(SpecService(catalog, client))
     mcp = FastMCP("test")
     register_tools(mcp, catalog=catalog, spec_search=spec_search)
     return mcp, client
 
 
-def test_full_flow_list_search_get(fixture_catalog_path: Path) -> None:
+async def test_full_flow_list_search_get(fixture_catalog_path: Path) -> None:
     mcp, client = _build_mcp(fixture_catalog_path)
     tools = mcp._tool_manager._tools
 
@@ -53,24 +53,24 @@ def test_full_flow_list_search_get(fixture_catalog_path: Path) -> None:
     service_ids = {summary.id for summary in services}
     assert "alpha-api" in service_ids
 
-    search = tools["search_spec"].fn(service_id="alpha-api", query="add a new pet")
+    search = await tools["search_spec"].fn(service_id="alpha-api", query="add a new pet")
     top = search.hits[0]
     assert top.operation_id == "addPet"
     assert top.method == "POST"
 
-    detail = tools["get_operation"].fn(service_id="alpha-api", method=top.method, path=top.path)
+    detail = await tools["get_operation"].fn(service_id="alpha-api", method=top.method, path=top.path)
     assert detail.request_body is not None
     assert detail.request_body.content[0].json_schema == {
         "type": "object",
         "properties": {"name": {"type": "string"}},
     }
-    client.close()
+    await client.aclose()
 
 
-def test_search_spec_unknown_service_raises_tool_error(fixture_catalog_path: Path) -> None:
+async def test_search_spec_unknown_service_raises_tool_error(fixture_catalog_path: Path) -> None:
     mcp, client = _build_mcp(fixture_catalog_path)
 
     tool = mcp._tool_manager._tools["search_spec"]
     with pytest.raises(ToolError):
-        tool.fn(service_id="does-not-exist", query="anything")
-    client.close()
+        await tool.fn(service_id="does-not-exist", query="anything")
+    await client.aclose()

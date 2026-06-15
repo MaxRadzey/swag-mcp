@@ -29,19 +29,19 @@ def _spec_body() -> bytes:
     ).encode()
 
 
-def test_search_spec_tool_returns_ranked_hits(fixture_catalog_path: Path) -> None:
+async def test_search_spec_tool_returns_ranked_hits(fixture_catalog_path: Path) -> None:
     catalog = CatalogService(fixture_catalog_path)
-    client = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200, content=_spec_body())))
+    client = httpx.AsyncClient(transport=httpx.MockTransport(lambda request: httpx.Response(200, content=_spec_body())))
     spec_service = SpecService(catalog, client)
     spec_search = SpecGateway(spec_service)
     mcp = FastMCP("test")
     register_tools(mcp, catalog=catalog, spec_search=spec_search)
 
     tool = mcp._tool_manager._tools["search_spec"]
-    result = tool.fn(service_id="alpha-api", query="create user", method="POST")
+    result = await tool.fn(service_id="alpha-api", query="create user", method="POST")
 
     assert result.service_id == "alpha-api"
     assert result.hits[0].operation_id == "createUser"
     assert result.hits[0].method == "POST"
     assert result.total_candidates == 1
-    client.close()
+    await client.aclose()

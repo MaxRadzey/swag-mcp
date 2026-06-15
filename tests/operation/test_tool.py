@@ -36,20 +36,20 @@ def _spec_body() -> bytes:
     ).encode()
 
 
-def _build_tool(fixture_catalog_path: Path) -> tuple[FastMCP, httpx.Client]:
+def _build_tool(fixture_catalog_path: Path) -> tuple[FastMCP, httpx.AsyncClient]:
     catalog = CatalogService(fixture_catalog_path)
-    client = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200, content=_spec_body())))
+    client = httpx.AsyncClient(transport=httpx.MockTransport(lambda request: httpx.Response(200, content=_spec_body())))
     spec_search = SpecGateway(SpecService(catalog, client))
     mcp = FastMCP("test")
     register_tools(mcp, catalog=catalog, spec_search=spec_search)
     return mcp, client
 
 
-def test_get_operation_returns_resolved_contract(fixture_catalog_path: Path) -> None:
+async def test_get_operation_returns_resolved_contract(fixture_catalog_path: Path) -> None:
     mcp, client = _build_tool(fixture_catalog_path)
 
     tool = mcp._tool_manager._tools["get_operation"]
-    result = tool.fn(service_id="alpha-api", method="POST", path="/pet")
+    result = await tool.fn(service_id="alpha-api", method="POST", path="/pet")
 
     assert result.operation_id == "addPet"
     assert result.request_body is not None
@@ -57,13 +57,13 @@ def test_get_operation_returns_resolved_contract(fixture_catalog_path: Path) -> 
         "type": "object",
         "properties": {"name": {"type": "string"}},
     }
-    client.close()
+    await client.aclose()
 
 
-def test_get_operation_unknown_operation_raises_tool_error(fixture_catalog_path: Path) -> None:
+async def test_get_operation_unknown_operation_raises_tool_error(fixture_catalog_path: Path) -> None:
     mcp, client = _build_tool(fixture_catalog_path)
 
     tool = mcp._tool_manager._tools["get_operation"]
     with pytest.raises(ToolError):
-        tool.fn(service_id="alpha-api", method="DELETE", path="/pet")
-    client.close()
+        await tool.fn(service_id="alpha-api", method="DELETE", path="/pet")
+    await client.aclose()

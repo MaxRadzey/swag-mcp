@@ -17,24 +17,72 @@ Compose mounts `./swag` into the container and runs uvicorn with `--reload`, so 
 Check:
 
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:8765/health
 # {"status":"ok","service":"swag"}
-# MCP for Cursor: http://localhost:8000/mcp
+# MCP endpoint: http://localhost:8765/mcp/
 ```
 
-## Cursor
+`docker-compose.yml` maps host port `8765` → container port `8000`, so on the host the
+server is reachable at `http://localhost:8765`. The MCP endpoint is mounted at `/mcp/`
+(note the trailing slash — without it Starlette returns a 307 redirect to `/mcp/`).
 
-Connect to the running server over HTTP:
+## Connecting a client
+
+The server speaks **MCP Streamable HTTP** (FastMCP, `stateless_http`, JSON responses).
+Use a Streamable HTTP client config, not an SSE one — the distinction matters because
+some clients pick the transport from the config key.
+
+### Cursor
+
+Cursor's `url` key uses Streamable HTTP:
 
 ```json
 {
   "mcpServers": {
     "swag": {
-      "url": "http://localhost:8000/mcp"
+      "url": "http://localhost:8765/mcp/"
     }
   }
 }
 ```
+
+### qwen-code / gemini-cli
+
+In these clients the config key selects the transport: **`httpUrl` = Streamable HTTP**,
+while **`url` = SSE**. This server is Streamable HTTP, so you **must** use `httpUrl`:
+
+```json
+{
+  "mcpServers": {
+    "swag": {
+      "httpUrl": "http://localhost:8765/mcp/"
+    }
+  }
+}
+```
+
+Using `url` here makes the client open an SSE stream (`GET /mcp/`) without a session id;
+the server replies `400 Bad Request: Missing session ID`, and the client then falls back
+to OAuth discovery and fails (`Failed to discover OAuth configuration from MCP server`).
+
+> If qwen-code itself runs in a container, `localhost` points at *its own* container, not
+> the host. Use the host address (`host.docker.internal` or the host IP) or put both
+> containers on a shared Docker network.
+
+### Troubleshooting
+
+`GET /mcp/ 400 Bad Request` followed by an OAuth-discovery attempt almost always means the
+client is configured for SSE (`url`) instead of Streamable HTTP (`httpUrl`). Verify the
+server itself is fine with a direct `initialize` call:
+
+```bash
+curl -i -X POST http://localhost:8765/mcp/ \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1"}}}'
+```
+
+A JSON `initialize` result confirms the server works and the problem is the client config.
 
 ## Tools
 

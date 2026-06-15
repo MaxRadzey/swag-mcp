@@ -17,7 +17,7 @@ async def health() -> dict[str, str]:
 
 def create_app() -> FastAPI:
     settings = Settings()
-    client = httpx.Client(timeout=settings.spec_fetch_timeout)
+    client = httpx.AsyncClient(timeout=settings.spec_fetch_timeout)
 
     mcp = create_server(settings, client=client)
     mcp_asgi = mcp.streamable_http_app()
@@ -26,7 +26,7 @@ def create_app() -> FastAPI:
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         async with mcp.session_manager.run():
             yield
-        client.close()
+        await client.aclose()
 
     app = FastAPI(lifespan=lifespan)
     app.include_router(router)

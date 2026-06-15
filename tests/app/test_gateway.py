@@ -36,22 +36,22 @@ def _spec_body() -> bytes:
     ).encode()
 
 
-def test_search_returns_ranked_hits(fixture_catalog_path: Path) -> None:
+async def test_search_returns_ranked_hits(fixture_catalog_path: Path) -> None:
     catalog = CatalogService(fixture_catalog_path)
-    client = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200, content=_spec_body())))
+    client = httpx.AsyncClient(transport=httpx.MockTransport(lambda request: httpx.Response(200, content=_spec_body())))
     spec_service = SpecService(catalog, client)
     search_service = SpecGateway(spec_service)
 
-    response = search_service.search("alpha-api", SearchQuery(query="create user", method="POST"))
+    response = await search_service.search("alpha-api", SearchQuery(query="create user", method="POST"))
 
     assert response.service_id == "alpha-api"
     assert response.total_candidates == 2
     assert response.hits[0].operation_id == "createUser"
     assert response.hits[0].method == "POST"
-    client.close()
+    await client.aclose()
 
 
-def test_search_reuses_spec_service_cache(fixture_catalog_path: Path) -> None:
+async def test_search_reuses_spec_service_cache(fixture_catalog_path: Path) -> None:
     call_count = 0
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -60,24 +60,24 @@ def test_search_reuses_spec_service_cache(fixture_catalog_path: Path) -> None:
         return httpx.Response(200, content=_spec_body())
 
     catalog = CatalogService(fixture_catalog_path)
-    client = httpx.Client(transport=httpx.MockTransport(handler))
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
     spec_service = SpecService(catalog, client)
     search_service = SpecGateway(spec_service)
 
-    search_service.search("alpha-api", SearchQuery(query="create user"))
-    search_service.search("alpha-api", SearchQuery(query="list user"))
+    await search_service.search("alpha-api", SearchQuery(query="create user"))
+    await search_service.search("alpha-api", SearchQuery(query="list user"))
 
     assert call_count == 1
-    client.close()
+    await client.aclose()
 
 
-def test_search_unknown_service_raises(fixture_catalog_path: Path) -> None:
+async def test_search_unknown_service_raises(fixture_catalog_path: Path) -> None:
     catalog = CatalogService(fixture_catalog_path)
-    client = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200, content=_spec_body())))
+    client = httpx.AsyncClient(transport=httpx.MockTransport(lambda request: httpx.Response(200, content=_spec_body())))
     spec_service = SpecService(catalog, client)
     search_service = SpecGateway(spec_service)
 
     with pytest.raises(ServiceNotFoundError):
-        search_service.search("unknown-api", SearchQuery(query="create user"))
+        await search_service.search("unknown-api", SearchQuery(query="create user"))
 
-    client.close()
+    await client.aclose()
